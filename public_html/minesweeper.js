@@ -24,8 +24,8 @@ var default_config = {
     },
     
     colors: {
-        background_color: "#ffff00",
-        border_color: "#ff0000"
+        background_color: "#b9b9b9",
+        border_color: "#3333ff"
     }
 };
 
@@ -258,8 +258,32 @@ var GraphicsModule = (function() {
         
         var ctx = m_canvas.getContext("2d");
         
-        ctx.fillStyle = default_config.colors.background_color;
+        ctx.fillStyle = "#dddddd";//default_config.colors.background_color;
         ctx.fillRect(0, 0, width_in_pixels, height_in_pixels);
+        
+        ctx.fillStyle = default_config.colors.border_color;
+        ctx.lineWidth = 1;
+        //
+        // Draw horizontal lines.
+        for (var row = 0, y = 0; 
+                 row !== m_grid_height + 1; 
+                 row++, y += (m_cell_height + 1)) {
+            draw_line(0, y, width_in_pixels, y, ctx);
+        }
+        
+        // Draw vertical lines.
+        for (var column = 0, x = 0;
+                 column !== m_grid_width + 1;
+                 column++, x += (m_cell_width + 1)) {
+            draw_line(x, 0, x, height_in_pixels, ctx);
+        }
+    }
+    
+    function draw_line(start_x, start_y, goal_x, goal_y, ctx) {
+        ctx.beginPath();
+        ctx.moveTo(start_x + 0.5, start_y + 0.5);
+        ctx.lineTo(goal_x + 0.5, goal_y + 0.5);
+        ctx.stroke();
     }
     
     function highlight_cell(x, y) {
