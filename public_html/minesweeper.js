@@ -13,8 +13,8 @@ var default_config = {
         grid_width:  2, // the minimum grid width.
         grid_height: 2, // the minimum grid height.
         ////
-        cell_width:  5, // the minimum cell width.
-        cell_height: 5, // the minimum cell height.
+        cell_width:  10, // the minimum cell width.
+        cell_height: 10, // the minimum cell height.
         ////
         mine_load_factor: 0.01 // the minimum percentage of mines in a grid.
     },
@@ -25,7 +25,8 @@ var default_config = {
     
     colors: {
         background_color: "#b9b9b9",
-        border_color: "#3333ff"
+        border_color: "#3333ff",
+        aim_color: "red"
     }
 };
 
@@ -258,42 +259,83 @@ var GraphicsModule = (function() {
         
         var ctx = m_canvas.getContext("2d");
         
-        ctx.fillStyle = "#dddddd";//default_config.colors.background_color;
+        ctx.fillStyle = default_config.colors.background_color;
         ctx.fillRect(0, 0, width_in_pixels, height_in_pixels);
         
         ctx.fillStyle = default_config.colors.border_color;
         ctx.lineWidth = 1;
-        //
+        
         // Draw horizontal lines.
         for (var row = 0, y = 0; 
                  row !== m_grid_height + 1; 
                  row++, y += (m_cell_height + 1)) {
-            draw_line(0, y, width_in_pixels, y, ctx);
+              draw_horizontal_line(0, y, width_in_pixels, ctx);
         }
         
         // Draw vertical lines.
         for (var column = 0, x = 0;
                  column !== m_grid_width + 1;
                  column++, x += (m_cell_width + 1)) {
-            draw_line(x, 0, x, height_in_pixels, ctx);
+              draw_vertical_line(x, 0, height_in_pixels, ctx);
         }
+        
+        aim_highlight_cell(1, 1, ctx);
     }
     
-    function draw_line(start_x, start_y, goal_x, goal_y, ctx) {
+    function draw_vertical_line(x, y, len, ctx) {
         ctx.beginPath();
-        ctx.moveTo(start_x + 0.5, start_y + 0.5);
-        ctx.lineTo(goal_x + 0.5, goal_y + 0.5);
+        ctx.moveTo(x + 0.5, y + 0.5);
+        ctx.lineTo(x + 0.5, y + len - 0.5);
         ctx.stroke();
     }
     
-    function highlight_cell(x, y) {
-        if (x < 0 || x >= grid_width) {
-            throw "'x' out of bounds! Value: " + x + ", width: " + grid_width;
+    function draw_horizontal_line(x, y, len, ctx) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, y + 0.5);
+        ctx.lineTo(x + len - 0.5, y + 0.5);
+        ctx.stroke();
+    }
+    
+    function aim_highlight_cell(x, y, ctx) {
+        if (x < 0 || x >= m_grid_width) {
+            throw "'x' out of bounds! Value: " + x + ", width: " + m_grid_width;
         }
         
-        if (y < 0 || y >= grid_height) {
-            throw "'y' out of bounds! Value: " + y + ", height: " + grid_height;
+        if (y < 0 || y >= m_grid_height) {
+            throw "'y' out of bounds! Value: " + y + ", height: " + 
+                  m_grid_height;
         }
+        
+        ctx.strokeStyle = "#000000";// default_config.colors.aim_color;
+        ctx.lineWidth = 1;
+        
+        var bar_len = Math.floor((2 + Math.min(m_cell_width, 
+                                               m_cell_height)) / 3);
+                                               
+        ctx.fillRect(x * (m_cell_width + 1),
+                     y * (m_cell_height + 1),
+                     bar_len,
+                     2);
+                     
+        ctx.fillRect((x + 1) * (m_cell_width + 1) - bar_len + 1,
+                     y * (m_cell_height + 1),
+                     bar_len,
+                     2);
+        
+        ctx.font = "Calibri 8px";
+        ctx.fillText("F", 
+                     1 * (m_cell_width + 1) + m_cell_width / 2 + 0.5, 
+                     1 * (m_cell_height + 1) + m_cell_height / 2 + 0.5);
+//        draw_horizontal_line(x * (m_cell_width + 1),
+//                             y * (m_cell_height + 1),
+//                             bar_len,
+//                             ctx);
+        
+                             
+//        draw_horizontal_line((x + 1) * (m_cell_width + 1) - bar_len + 1,
+//                             y * (m_cell_height + 1),
+//                             bar_len,
+//                             ctx);
     }
     
     return {
