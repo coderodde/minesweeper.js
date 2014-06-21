@@ -25,8 +25,8 @@ var default_config = {
     
     colors: {
         background_color: "#b9b9b9",
-        border_color: "#3333ff",
-        aim_color: "red"
+        border_color:     "#3333ff",
+        aim_color:        "#ff0000"
     }
 };
 
@@ -87,7 +87,7 @@ function check_config(config) {
     }
     
     // Check the name of the canvas.
-    if (config.canvas_name || !is_string(config.canvas_name)) {
+    if (config.canvas_name && !is_string(config.canvas_name)) {
         config.canvas_name = default_config.canvas_name;
     }
 }
@@ -306,12 +306,13 @@ var GraphicsModule = (function() {
                   m_grid_height;
         }
         
-        ctx.strokeStyle = "#000000";// default_config.colors.aim_color;
+        ctx.fillStyle = "#ff0000";//default_config.colors.aim_color;
         ctx.lineWidth = 1;
         
         var bar_len = Math.floor((2 + Math.min(m_cell_width, 
                                                m_cell_height)) / 3);
-                                               
+                            
+        // BEGIN: Top aim bars.
         ctx.fillRect(x * (m_cell_width + 1),
                      y * (m_cell_height + 1),
                      bar_len,
@@ -321,21 +322,43 @@ var GraphicsModule = (function() {
                      y * (m_cell_height + 1),
                      bar_len,
                      2);
+        // END: Top aim bars.
         
-        ctx.font = "Calibri 8px";
-        ctx.fillText("F", 
-                     1 * (m_cell_width + 1) + m_cell_width / 2 + 0.5, 
-                     1 * (m_cell_height + 1) + m_cell_height / 2 + 0.5);
-//        draw_horizontal_line(x * (m_cell_width + 1),
-//                             y * (m_cell_height + 1),
-//                             bar_len,
-//                             ctx);
+        // BEGIN: Right aim bars.
+        ctx.fillRect((x + 1) * (m_cell_width + 1) - 1,
+                     y * (m_cell_height + 1),
+                     2,
+                     bar_len);
+                     
+        ctx.fillRect((x + 1) * (m_cell_width + 1) - 1,
+                     (y + 1) * (m_cell_height + 1) - bar_len + 1,
+                     2, 
+                     bar_len);
+        // END: Right aim bars.
         
-                             
-//        draw_horizontal_line((x + 1) * (m_cell_width + 1) - bar_len + 1,
-//                             y * (m_cell_height + 1),
-//                             bar_len,
-//                             ctx);
+        // BEGIN: Bottom aim bars.
+        ctx.fillRect(x * (m_cell_width + 1),
+                     (y + 1) * (m_cell_height + 1) - 1,
+                     bar_len,
+                     2);
+                     
+        ctx.fillRect((x + 1) * (m_cell_width + 1) - bar_len + 1,
+                     (y + 1) * (m_cell_height + 1) - 1,
+                     bar_len,
+                     2);
+        // END: Bottom aim bars.
+        
+        // BEGIN: Left aim bars.
+        ctx.fillRect(x * (m_cell_width + 1),
+                     y * (m_cell_height + 1),
+                     2,
+                     bar_len);
+                     
+        ctx.fillRect(x * (m_cell_width + 1),
+                     (y + 1) * (m_cell_height + 1) - bar_len + 1,
+                     2,
+                     bar_len);
+        // END: Left aim bars.
     }
     
     return {
