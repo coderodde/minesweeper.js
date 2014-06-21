@@ -44,6 +44,110 @@ function minesweeper_init(config) {
                             config.cell_height);
                             
     GraphicsModule.redraw();
+    GraphicsModule.aim_highlight_cell(0, 0);
+    
+    engine.config = config;
+    
+    attachMouseListeners(canvas_element, engine);
+}
+
+var keys = {
+    KEY_UP:     38,  // Aim movement keys.
+    KEY_RIGHT:  39,
+    KEY_DOWN:   40,
+    KEY_LEFT:   37,
+    
+    KEY_A:      65,  // Alternative movement keys.
+    KEY_S:      83,
+    KEY_D:      68,
+    KEY_W:      87,
+    
+    KEY_SPACE:  32,  // Mine flag toggle key.
+    KEY_O:      79   // Open non-flagged cell key.
+};
+
+var engine = {
+    running:            false,
+    last_valid_cell_x:  0,
+    last_valid_cell_y:  0,
+    game_start_time:    undefined,
+    mines_flagged:      0,
+    config:             undefined,
+    grid:               undefined,
+   
+    start: function(conf) {
+        running = true;
+        last_valid_cell_x = 0;
+        last_valid_cell_y = 0;
+        mines_flagged = 0;
+        config = conf;
+        
+        grid = new Grid(config.grid_width, 
+                        config.grid_height,
+                        config.mine_load_factor);
+                        
+        game_start_time: new Date().getTime();
+    }
+};
+
+function attachKeyListeners() {
+    document.onkeydown = function(event_info) {
+        
+    };
+}
+
+function attachMouseListeners(canvas_element, engine) {
+    var listener = function(e) {
+        var x = e.offsetX;
+        var y = e.offsetY;
+        
+        console.log("(" + x + ", " + y + ")");
+        GraphicsModule.redraw();
+        
+        function set_last_valid(engine) {
+            GraphicsModule.aim_highlight_cell(engine.last_valid_cell_x,
+                                              engine.last_valid_cell_y);
+        }
+        
+        if (x % (engine.config.cell_width + 1) === 0) {
+            // Mouse pointer at the border.
+            set_last_valid(engine);
+            return;
+        }
+        
+        if (y % (engine.config.cell_height + 1) === 0) {
+            // Mouse pointer at the border.
+            set_last_valid(engine);
+            return;
+        }
+        
+        x /= (engine.config.cell_width + 1);
+        y /= (engine.config.cell_height + 1);
+        
+        x = Math.floor(x);
+        y = Math.floor(y);
+        
+        if (x >= engine.config.grid_width) {
+            // Out of bounds.
+            set_last_valid(engine);
+            return;
+        }
+        
+        if (y >= engine.config.grid_height) {
+            // Out of bounds.
+            set_last_valid(engine);
+            return;
+        }
+        
+        // Once here, we have a highlighted point (x, y);
+        engine.last_valid_cell_x = x;
+        engine.last_valid_cell_y = y;
+        GraphicsModule.aim_highlight_cell(x, y);
+    };
+    
+    canvas_element.addEventListener("mousemove",
+                                    listener,
+                                    false);
 }
 
 // Makes sure that the configuration object has all required fields and those
@@ -279,7 +383,7 @@ var GraphicsModule = (function() {
               draw_vertical_line(x, 0, height_in_pixels, ctx);
         }
         
-        aim_highlight_cell(1, 1, ctx);
+        
     }
     
     function draw_vertical_line(x, y, len, ctx) {
@@ -296,7 +400,13 @@ var GraphicsModule = (function() {
         ctx.stroke();
     }
     
-    function aim_highlight_cell(x, y, ctx) {
+    function aim_highlight_cell(x, y) {
+        if (m_ok === false) {
+            throw "GraphicsModule is not initialized!";
+        }
+        
+        var ctx = m_canvas.getContext("2d");
+        
         if (x < 0 || x >= m_grid_width) {
             throw "'x' out of bounds! Value: " + x + ", width: " + m_grid_width;
         }
@@ -362,8 +472,9 @@ var GraphicsModule = (function() {
     }
     
     return {
-        set_data: set_data,
-        redraw:   redraw
+        set_data:           set_data,
+        redraw:             redraw,
+        aim_highlight_cell: aim_highlight_cell
     };
 })();
 
