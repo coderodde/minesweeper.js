@@ -459,8 +459,13 @@ var GraphicsModule = (function() {
         var px = Math.min(m_cell_width, m_cell_height) - 2;
         ctx.fillStyle = "blue";
         ctx.font = px + "px Arial";
+        
+        var span_element = document.createElement("span");
+        span_element.innerHTML = ch[0];
+        var width = span_element.clientWidth;
+        
         ctx.fillText(ch, 
-                     x * (m_cell_width + 1) + 1, 
+                     x * (m_cell_width + 1) + (m_cell_width - width) / 2, 
                      y * (m_cell_height + 1) + 1 + px);
     }
     
