@@ -48,7 +48,8 @@ function minesweeper_init(config) {
     
     engine.config = config;
     
-    attachMouseListeners(canvas_element, engine);
+    attachMouseListener(canvas_element, engine);
+    attachKeyboardListener(engine);
 }
 
 var keys = {
@@ -57,13 +58,20 @@ var keys = {
     KEY_DOWN:   40,
     KEY_LEFT:   37,
     
-    KEY_A:      65,  // Alternative movement keys.
-    KEY_S:      83,
-    KEY_D:      68,
-    KEY_W:      87,
+    KEY_AA:     65,  // Alternative movement capital keys.
+    KEY_SS:     83,
+    KEY_DD:     68,
+    KEY_WW:     87,
+    
+    KEY_A:      97,  // Alternative movement capital keys.
+    KEY_S:      115,
+    KEY_D:      100,
+    KEY_W:      119,
     
     KEY_SPACE:  32,  // Mine flag toggle key.
-    KEY_O:      79   // Open non-flagged cell key.
+    KEY_O:      79,  // Open non-flagged cell key.
+    
+    KEY_SHIFT:  16   // Shift key.
 };
 
 var engine = {
@@ -74,7 +82,8 @@ var engine = {
     mines_flagged:      0,
     config:             undefined,
     grid:               undefined,
-   
+    shift_pressed:      false,
+    
     start: function(conf) {
         running = true;
         last_valid_cell_x = 0;
@@ -90,13 +99,7 @@ var engine = {
     }
 };
 
-function attachKeyListeners() {
-    document.onkeydown = function(event_info) {
-        
-    };
-}
-
-function attachMouseListeners(canvas_element, engine) {
+function attachMouseListener(canvas_element, engine) {
     var listener = function(e) {
         var x = e.offsetX;
         var y = e.offsetY;
@@ -104,20 +107,20 @@ function attachMouseListeners(canvas_element, engine) {
         console.log("(" + x + ", " + y + ")");
         GraphicsModule.redraw();
         
-        function set_last_valid(engine) {
+        function set_last_valid_cell(engine) {
             GraphicsModule.aim_highlight_cell(engine.last_valid_cell_x,
                                               engine.last_valid_cell_y);
         }
         
         if (x % (engine.config.cell_width + 1) === 0) {
             // Mouse pointer at the border.
-            set_last_valid(engine);
+            set_last_valid_cell(engine);
             return;
         }
         
         if (y % (engine.config.cell_height + 1) === 0) {
             // Mouse pointer at the border.
-            set_last_valid(engine);
+            set_last_valid_cell(engine);
             return;
         }
         
@@ -129,13 +132,13 @@ function attachMouseListeners(canvas_element, engine) {
         
         if (x >= engine.config.grid_width) {
             // Out of bounds.
-            set_last_valid(engine);
+            set_last_valid_cell(engine);
             return;
         }
         
         if (y >= engine.config.grid_height) {
             // Out of bounds.
-            set_last_valid(engine);
+            set_last_valid_cell(engine);
             return;
         }
         
@@ -145,9 +148,69 @@ function attachMouseListeners(canvas_element, engine) {
         GraphicsModule.aim_highlight_cell(x, y);
     };
     
-    canvas_element.addEventListener("mousemove",
-                                    listener,
-                                    false);
+    canvas_element.addEventListener("mousemove", listener, false);
+}
+
+function attachKeyboardListener(engine) {
+    var listener = function(e) {
+        
+        function try_move_aim(engine, dx, dy) {
+            if (dx > 0) {
+                engine.last_valid_cell_x += (e.shiftKey ? 3 : 1);
+            } else if (dx < 0) {
+                engine.last_valid_cell_x -= (e.shiftKey ? 3 : 1);
+            } else if (dy > 0) {
+                engine.last_valid_cell_y += (e.shiftKey ? 3 : 1);
+            } else if (dy < 0) {
+                engine.last_valid_cell_y -= (e.shiftKey ? 3 : 1);
+            }
+            
+            if (engine.last_valid_cell_x < 0) {
+                engine.last_valid_cell_x = 0;
+            } else if (engine.last_valid_cell_x >= engine.config.grid_width) {
+                engine.last_valid_cell_x = engine.config.grid_width - 1;
+            } else if (engine.last_valid_cell_y < 0) {
+                engine.last_valid_cell_y = 0;
+            } else if (engine.last_valid_cell_y >= engine.config.grid_height) {
+                engine.last_valid_cell_y = engine.config.grid_height - 1;
+            }
+            
+            GraphicsModule.redraw();
+            GraphicsModule.aim_highlight_cell(engine.last_valid_cell_x,
+                                              engine.last_valid_cell_y);
+        }
+        
+        switch (e.keyCode) {
+            case keys.KEY_UP:
+            case keys.KEY_WW:
+            case keys.KEY_W:
+                try_move_aim(engine, 0, -1);
+                break;
+                
+            case keys.KEY_RIGHT:
+            case keys.KEY_DD:
+            case keys.KEY_D:
+                try_move_aim(engine, 1, 0);
+                break;
+                
+            case keys.KEY_DOWN:
+            case keys.KEY_SS:
+            case keys.KEY_S:
+                try_move_aim(engine, 0, 1);
+                break;
+                
+            case keys.KEY_LEFT:
+            case keys.KEY_AA:
+            case keys.KEY_A:
+                try_move_aim(engine, -1, 0);
+                break;
+                
+            case keys.SHIFT:
+                engine.shift_pressed = true;
+        }
+    };
+    
+    document.onkeydown = listener;  
 }
 
 // Makes sure that the configuration object has all required fields and those
