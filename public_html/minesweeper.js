@@ -13,8 +13,8 @@ var default_config = {
         grid_width:  2, // the minimum grid width.
         grid_height: 2, // the minimum grid height.
         ////
-        cell_width:  10, // the minimum cell width.
-        cell_height: 10, // the minimum cell height.
+        cell_width:  10, // the minimum cell width in pixels.
+        cell_height: 10, // the minimum cell height in pixels.
         ////
         mine_load_factor: 0.01 // the minimum percentage of mines in a grid.
     },
@@ -37,9 +37,12 @@ function minesweeper_init(config) {
                           document.getElementById(config.canvas_name) :
                           document.getElementsByTagName("canvas")[0]);
     
+    var grid = new Grid(config.grid_width,
+                        config.grid_height,
+                        config.mine_load_factor);
+    
     GraphicsModule.set_data(canvas_element,
-                            config.grid_width,
-                            config.grid_height,
+                            grid,
                             config.cell_width,
                             config.cell_height);
                             
@@ -104,7 +107,6 @@ function attachMouseListener(canvas_element, engine) {
         var x = e.offsetX;
         var y = e.offsetY;
         
-        console.log("(" + x + ", " + y + ")");
         GraphicsModule.redraw();
         
         function set_last_valid_cell(engine) {
@@ -295,11 +297,11 @@ function is_boolean(b) {
 
 // Creates an array of points (x, y), where 0 <= x < width and 0 <= y < height.
 function create_points(width, height) {
-    if (!is_int(width)) {
+    if (!is_integer(width)) {
         throw "'width' is not an integer!";
     }
     
-    if (!is_int(height)) {
+    if (!is_integer(height)) {
         throw "'height' is not an integer!"
     }
     
@@ -347,11 +349,11 @@ function shuffle_array(array) {
 
 // Returns a random integer within range [min, max].
 function random_int(min, max) {
-    if (!is_int(min)) {
+    if (!is_integer(min)) {
         throw "'min' is not an integer: " + min;
     }
     
-    if (!is_int(max)) {
+    if (!is_integer(max)) {
         throw "'max' is not an integer: " + max;
     }
     
@@ -372,45 +374,37 @@ var GraphicsModule = (function() {
     var m_grid_height;
     var m_cell_width;
     var m_cell_height;
+    var m_grid;
     var m_ok = false;
     
     function set_data(canvas,
-                      grid_width,
-                      grid_height,
+                      grid,
                       cell_width,
                       cell_height) {
         check_defined(canvas,      "'canvas' is not defined!");
-        check_integer(grid_width,  "'grid_width' is not an integer!");
-        check_integer(grid_height, "'grid_height' is not an integer!");
+        check_defined(grid,        "'grid' is not defined!");
         check_integer(cell_width,  "'cell_width' is not an integer!");
         check_integer(cell_height, "'cell_height' is not an integer!");
-        check_integer_not_below(grid_width, 
-                                default_config.min.grid_width,
-                                "'grid_width' is too small (" + grid_width + 
-                                "), must be at least " +
-                                default_config.min.grid_width + "!");
-        check_integer_not_below(grid_height, 
-                                default_config.min.grid_height,
-                                "'grid_height' is too small (" + grid_height + 
-                                "), must be at least " +
-                                default_config.min.grid_height + "!");
+        
         check_integer_not_below(cell_width,
                                 default_config.min.cell_width,
                                 "'cell_width' is too small (" + cell_width + 
                                 "), must be at least " +
                                 default_config.min.cell_width + "!");
+                        
         check_integer_not_below(cell_height,
                                 default_config.min.cell_height,
                                 "'cell_height' is too small (" + cell_height + 
                                 "), must be at least " +
                                 default_config.min.cell_height + "!");
         
-        m_canvas = canvas;
-        m_grid_width = grid_width;
-        m_grid_height = grid_height;
-        m_cell_width = cell_width;
+        m_canvas =      canvas;
+        m_grid =        grid;
+        m_grid_width =  grid.get_width();
+        m_grid_height = grid.get_height();
+        m_cell_width =  cell_width;
         m_cell_height = cell_height;
-        m_ok = true;
+        m_ok =          true;
     }
     
     function redraw() {
@@ -446,7 +440,28 @@ var GraphicsModule = (function() {
               draw_vertical_line(x, 0, height_in_pixels, ctx);
         }
         
-        
+        for (var y = 0; y !== m_grid_height; ++y) {
+            for (var x = 0; x !== m_grid_width; ++x) {
+                var current_cell = m_grid.get_cell(x, y);
+                
+                draw_character(x, y, "f", ctx);
+                
+                if (current_cell.is_open()) {
+                    
+                } else if (current_cell.has_flag()) {
+                    
+                }
+            }
+        }
+    }
+    
+    function draw_character(x, y, ch, ctx) {
+        var px = Math.min(m_cell_width, m_cell_height) - 2;
+        ctx.fillStyle = "blue";
+        ctx.font = px + "px Arial";
+        ctx.fillText(ch, 
+                     x * (m_cell_width + 1) + 1, 
+                     y * (m_cell_height + 1) + 1 + px);
     }
     
     function draw_vertical_line(x, y, len, ctx) {
@@ -537,7 +552,7 @@ var GraphicsModule = (function() {
     return {
         set_data:           set_data,
         redraw:             redraw,
-        aim_highlight_cell: aim_highlight_cell
+        aim_highlight_cell: aim_highlight_cell,
     };
 })();
 
@@ -578,12 +593,20 @@ function Grid(width, height, mine_load_factor) {
     
     // Create the grid cells containing mines.
     for (var i = 0; i < this.mines; ++i) {
-        
+        var point = points[i];
+        this.cells[point.y][point.x] = new GridCell(point.x, 
+                                                    point.y,
+                                                    true,
+                                                    this);
     }
     
     // Create the grid cells without mines.
     for (var i = this.mines; i < width * height; ++i) {
-        
+        var point = points[i];
+        this.cells[point.y][point.x] = new GridCell(point.x,
+                                                    point.y,
+                                                    false,
+                                                    this);
     }
 }
 
@@ -600,15 +623,20 @@ Grid.prototype.get_height = function() {
 // This method returns a grid cell unless (x, y) points outside of the grid,
 // in which case, null is returned.
 Grid.prototype.get_cell = function(x, y) {
-    if (x < 0 || x >= width) {
+    if (x < 0 || x >= this.width) {
         return null;
     }
     
-    if (y < 0 || y >= height) {
+    if (y < 0 || y >= this.height) {
         return null;
     }
     
     return this.cells[y][x];
+};
+
+// Returns the amount of mines in this grid.
+Grid.prototype.get_mine_amount = function() {
+    return this.mines;
 };
 
 // This class models an individual cell in the game grid.
@@ -617,22 +645,22 @@ function GridCell(x, y, has_mine, grid) {
     check_integer(x, "'x' is not an integer!");
     check_integer(y, "'y' is not an integer!");
     check_boolean(has_mine, "'has_mine' is not an boolean!");
-    check_integer(width, "'width' is not an integer!");
-    check_integer(height, "'height' is not an integer!");
-    check_integer_not_below(width, 
-                            default_config.min.grid_width, 
-                            "'width' is less than " + 
-                            default_config.min.grid_width + "!");
-    check_integer_not_below(height,
-                            default_config.min.grid_height,
-                            "'height' is less than " +
-                            default_config.min.grid_height + "!");
+//    check_integer(width, "'width' is not an integer!");
+//    check_integer(height, "'height' is not an integer!");
+//    check_integer_not_below(width, 
+//                            default_config.min.grid_width, 
+//                            "'width' is less than " + 
+//                            default_config.min.grid_width + "!");
+//    check_integer_not_below(height,
+//                            default_config.min.grid_height,
+//                            "'height' is less than " +
+//                            default_config.min.grid_height + "!");
     this.x = x;
     this.y = y;
     this.has_mine = has_mine;
     this.grid = grid;
     this.open = false;
-    this.marked = false;
+    this.flagged = false;
 }
 
 // This method return the list of neighbour cells in the game grid. No more than
@@ -678,6 +706,18 @@ GridCell.prototype.get_degree = function() {
     }
     
     return degree;
+};
+
+GridCell.prototype.toggle_flag = function() {
+    this.flagged = !this.flagged;
+};
+
+GridCell.prototype.has_flag = function() {
+    return this.flagged;
+};
+
+GridCell.prototype.is_open = function() {
+    return this.open;
 };
 
 // Checks that the argument 'i' is an integer, and if not, throws an exception
